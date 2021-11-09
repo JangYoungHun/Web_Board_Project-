@@ -164,4 +164,179 @@ function getList(pageNum, amount){
 
 ```
 
+## 개별 조회, 수정, 추가 페이지  
+
+개별 조회, 수정, 추가 페이지는 공통적인 페이지 구성을 가지고 있다.  
+제목, 작성자 내용을 입력하는 형식을 가지고 있다.  
+
+### 공통 구성 요소  
+공통 구성요소에는 5개의 input 태그가 있다.  
+각 페이지 별로 필요한 요소가 다르기 떄문에 input 태그의 disabled 속성과 readonly 속성을 이용한다.
+
+#### input 태그
+> + title : 제목
+> + writer : 작성자
+> + content : 내용 
+> + pageNum: 현재 페이지 번호
+> + amount: 페이지별 요소의 갯수
+
+
+```javascript
+	<form id="actionForm" action="해당하는 URI" method="HttpMethod">
+		<fieldset style="width: 800px;">
+
+			<div class="form-group row">
+				<div>
+					// 제목 입력 or 조회란
+					<label for="staticEmail" class="col-sm-2 col-form-label">제목</label>
+				</div>
+				<div id="title" class="col-sm-10">
+					<input name="title" type="text" value="" maxlength="20">
+				</div>
+			</div>
+			<div class="form-group">
+				<div>
+					// 작성자 입력 or 조회란
+					<label for="exampleInputEmail1" class="form-label mt-4">작성자</label>
+				</div>
+				<input name="writer" type="text" value="" maxlength="10">
+			</div>
+
+			<div class="form-group">
+				<div>
+					// 내용 입력 or 조회란
+					<label for="exampleTextarea">내용</label>
+				</div>
+				<textarea id="content" name="content" rows="3" 
+					style="margin: 0px; width: 650px; height: 250px;"> </textarea>
+			</div>
+				
+				// 페이징 기능을 위한 요소
+				// pageNum: 현재 페이지 번호.
+				// amount: 페이지별 요소의 갯수
+			<div class="form-group">
+				<input type="hidden" name="pageNum" value="${criteria.pageNum}">
+			</div>
+			<div class="form-group">
+				<input type="hidden" name="amount" value="${criteria.amount}">
+			</div>
+			
+			/*  페이지별 달라지는 부분
+			* 페이지별 버튼의 구성이 달라진다.
+			* <button type="reset">초기화</button>
+			* <button id="cancle_Btn" type="button">취소</button>
+			* <button id="add_Btn" type="button">확인</button>
+			*/
+	</form>
+```
+
+
+### 페이지별 다른 구성 요소
+페이지별로 하단의 버튼의 구성이달라진다.
+각각의 버튼의 기능은 Jquery를 이용하여 구현하였다.
+
+#### 개별 조회 페이지
+> + 수정 버튼 : 현재 게시글을 수정하는 페이지로 이동한다.
+> + 삭제 버튼 : 현재 조회 중인 게시글을 삭제한다.
+> + 확인 버튼 : 게시글 조회를 완료하고 목록 조회 페이지로 이동한다.
+
+```javascript
+
+	//삭제 버튼 클릭시 Form 정의
+	$("#delete_Btn").on("click", function(e){
+		actionForm.attr("action", "/board/remove/" + ${board.bno});
+		actionForm.submit();
+	});
+	
+/***********************************************************************************/	
+
+	//수정 버튼 클릭시 Form 정의
+	$("#update_Btn").on("click", function(e){
+		actionForm.attr("action", "/board/modifyPage");
+		actionForm.attr("method", "post");
+		$("input[name='title']").attr("disabled", false);
+		$("input[name='writer']").attr("disabled", false);
+		$("#content").attr("disabled", false);	
+		actionForm.submit();
+	});
+	
+/***********************************************************************************/		
+	
+		// 확인 버튼 클릭 시 Form 정의
+	$("#delete_Btn").on("click", function(e){
+		actionForm.attr("action", "/board/list");
+		actionForm.attr("method", "get");
+		actionForm.submit();
+	});
+```
+
+
+
+#### 수정 페이지
+> + 취소 버튼 : 현재 게시글을 수정하는 작업을 취소한다.
+> + 확인 버튼 : 현재 수정한 내용을 반영하여 게시글을 수정한다.
+
+```javascript
+	//수정 완료 버튼
+	$("#ok_Btn").on("click",function(e){
+		
+		console.log("click");
+		actionForm.attr("action", "/board/modify");
+		actionForm.attr("method", "post");		
+		actionForm.submit();
+	});
+	
+/***********************************************************************************/	
+
+	//수정 취소 버튼
+	$("#ok_Btn").on("click",function(e){
+		
+		console.log("click");
+		actionForm.attr("action", "/board/list");
+		actionForm.attr("method", "get");
+		actionForm.submit();
+	});
+```
+
+#### 추가 페이지
+> + 초기화 버튼 : 지금까지 입력한 내용을 초기화 시킨다.  Button type:"reset" 사용
+> + 취소 버튼 : 새로운 게시글 등록을 취소한다.  
+> + 확인 버튼 : 입력한 내용의 게시글을 추가한다.  
+
+
+```javascript
+
+	//메모 등록 취소 버튼
+	$("#cancle_Btn").on("click", function(e){
+		actionForm.attr("action", "/board/list");		
+		actionForm.attr("method", "get");
+		$("input[name='title']").attr("disabled", true);
+		$("input[name='writer']").attr("disabled", true);
+		$("#content").attr("disabled", true);	
+		actionForm.submit();
+	});
+	
+/***********************************************************************************/	
+
+	// 메모 등록 버튼
+	$("#add_Btn").on("click", function(e){		
+		if($("input[name='title']").val().trim()==""){
+			alert("제목을 입력하세요.");
+			return;
+		}
+		else if($("input[name='writer']").val().trim()==""){
+			alert("작성자 이름을 입력하세요.");
+			return;
+		}
+		else if($("#content").val().trim() ==""){
+			alert("내용을 입력하세요.");
+			return;
+		}				
+		actionForm.submit();
+	});
+
+
+```
+
+
 
