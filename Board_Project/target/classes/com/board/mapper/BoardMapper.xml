@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.board.mapper.BoardMapper">
+
+	<select id="get" resultType="com.board.domain.BoardDTO">
+		select * from board where bno=#{bno}
+	</select>
+
+	<select id="getList" resultType="com.board.domain.BoardDTO">
+		select * from board
+	</select>
+
+	<select id="getListWithPaging"
+		resultType="com.board.domain.BoardDTO">
+	<![CDATA[
+	select bno, title, writer, content, regdate, updatedate from (
+		select /*+ INDEX_DESC(board pk_board)*/ rownum rn, bno, title, writer, content, regdate, updatedate from board
+		where rownum <= (#{amount}) * (#{pageNum})
+		)
+		where rn > (#{amount}) * (#{pageNum}-1)
+	]]>
+
+	</select>
+
+	<select id="getCount" resultType="long">
+		select count(*) from board
+	</select>
+
+	<insert id="add">
+		insert into board (bno, title, writer, content,
+		updatedate)
+		values(seq_board.nextval, #{title}, #{writer}, #{content}, sysdate)
+	</insert>
+
+	<update id="update">
+		update board set title=#{title}, content=#{content}, updatedate=sysdate
+		where bno=#{bno}
+	</update>
+
+	<delete id="delete">
+		delete from board where bno=#{bno}
+	</delete>
+</mapper>
