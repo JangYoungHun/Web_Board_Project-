@@ -83,6 +83,7 @@ public class Criteria {
 각각의 버튼에 Jquery를 이용하여 onClick 이벤트를 등록한다.
 
 > + 게시글 추가 버튼  
+
 게시글을 추가하는 페이지로 이동한다.
 
 
@@ -99,13 +100,46 @@ public class Criteria {
 ```
 
 
-> + 목록 조회 버튼  
+> + 목록 조회 버튼    
+
 서버에 해당하는 페이지의 요소데이터를 비동기적으로 요청한다.
  
  
 > 
 ```javascript
 //Ajax 요청
+
+
+//페이징 버튼, 하단 숫자 버튼 클릭 이벤트
+// 하단의 페이지 버튼을 눌렀을 떄 해당하는 페이지로 이동한다.
+	var pagingForm = $("#pagingForm");
+	$(".pagination").on("click", "li", function(e){
+		
+	e.preventDefault();
+	pagingForm.find("input[name='pageNum']").val($(this).find("a").attr("href"));
+	pagingForm.submit();
+	});
+
+
+/*****************************************************************************************************************/
+
+
+// board.js 
+// 게시글과 관련된 함수들을 포함하고 있는 파일.
+// 해당하는 페이지의 목록 조회 요청을 한다.
+
+let boardService = (function(){	
+function getList(param,callback){
+  $.getJSON(`/board/getList?pageNum=${param.pageNum}&amount=${param.amount}`, function(data){
+    callback(data);
+   }
+    ).fail(function(shr,status, err){});
+  }
+  return {getList:getList};
+})();
+
+
+/*****************************************************************************************************************/
 
 
 // list.jsp
@@ -123,23 +157,10 @@ function getList(pageNum, amount){
      + "<td>" + item.regdate + "</td>" 
      + "<td>" + item.updatedate + "</td>" 
      + "</tr>"
-			});	
-			tbody.html(str);
-		});}
+	});	
+	tbody.html(str);
+	});}
 
-// board.js 
-// 게시글과 관련된 함수들을 포함하고 있는 파일.
-// 해당하는 페이지의 목록 조회 요청을 한다.
-
-let boardService = (function(){	
-function getList(param,callback){
-  $.getJSON(`/board/getList?pageNum=${param.pageNum}&amount=${param.amount}`, function(data){
-    callback(data);
-   }
-    ).fail(function(shr,status, err){});
-  }
-  return {getList:getList};
-})();
 
 ```
 
