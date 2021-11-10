@@ -263,7 +263,7 @@ function getList(pageNum, amount){
 /***********************************************************************************/		
 	
 		// 확인 버튼 클릭 시 Form 정의
-	$("#delete_Btn").on("click", function(e){
+	$("#ok_Btn").on("click", function(e){
 		actionForm.attr("action", "/board/list");
 		actionForm.attr("method", "get");
 		actionForm.submit();
