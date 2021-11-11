@@ -21,7 +21,234 @@ Back End
 ![그림1](https://user-images.githubusercontent.com/81062639/140886977-88ca6b3c-0736-4202-ad62-4ec375f63af1.png)
 
 
+
+
+## Spring Security
+Spring Security를 사용하여 사용자 인증과 권한 체크 기능을 구현했습니다.
+
+### 로그인 페이지
+Spring Security를 사용하여 기본적인 로그인 기능을 구현했다.
+id와 password 를 이용하여 사용자를 인증하고 권한을 확인한다.
+
+![로그인](https://user-images.githubusercontent.com/81062639/141301459-23972033-9105-4ce8-a3e3-493497e529d8.PNG)
+
+### loginPage.jsp
+
+```html
+ <form method='post' action="/login">
+  <div>
+    <input type='text' name='username' value='test'>
+  </div>
+  <div>
+    <input type='password' name='password' value='test'>
+  </div>
+
+  <div>
+    <input type='checkbox' name='remember-me'> 로그인 유지
+  </div>
+
+  <div>
+    <input type='submit'>
+  </div>
+    <input type="hidden" name="${_csrf.parameterName}"
+    value="${_csrf.token}" />  
+  </form>
+```
+
+## 자동 로그인 설정 (remember-me)
+자동 로그인 체크박스를 클릭후 로그인 시 자동 로그인을 위한 Cookie remember-me 가 생성된다.  
+쿠키가 만료되기 전까지 로그인이 유지된다. 
+### HTML
+```html
+  <div>
+    <input type='checkbox' name='remember-me'> 로그인 유지
+  </div>
+```
+### security-context.xml 설정
+```xml
+<security:http>	
+	// remember-me 설정
+	<security:remember-me data-source-ref="dataSource" token-validity-seconds="600000"/>	
+</security:http>
+```
+
+## 사용자 인증
+사용자가 로그인 정보를 입력하면 로그인 정보가 올바른 정보인지 확인을 한다.    
+사용자가 입력한 id에 해당하는 사용자의 정보를 userlist 테이블에서 조회하고 UserDetails 구현체를 생성한다.  
+생성한 구현체와 사용자가 입력한 정보를 확인하여 인증 처리를 한다.
+
+
+### Oracle DataBase Table 
+사용자 인증과 권한을 체크를 위해 필요한 데이터를 관리하는 Table  
+
+![시큐리티 테이블](https://user-images.githubusercontent.com/81062639/141306513-9da913eb-9e21-42ef-85ff-3335ba59d7b9.png)
+
+### AuthVO
+사용자의 권한을 관리하는 Database의 user_auth 테이블과 매핑되는 클래스이다.
+
+```java
+@Data
+public class AuthVO {	
+	private String userid;
+	private String auth;
+}
+```
+
+
+### AuthVO
+사용자의 정보을 관리하는 Database의 userlist 테이블과 매핑되는 클래스이다.
+
+```java
+@Data
+public class UserVO {
+	
+	private String userid;
+	private String userpw;
+	private String username;
+	private boolean enabled;
+	private Date regDate;
+	private Date updateDate;
+	private List<AuthVO> authList;
+}
+```
+
+### security-context.xml 설정
+```xml
+<security:http>	
+	<!-- 로그인 설정 --> 
+	<security:form-login login-page="/loginPage"/>
+	
+	<!-- 로그인 성공 후 필요한 권한이 없을 때 처리할 로직을 가지고있는 AccessDeniedHandler -->
+	<security:access-denied-handler ref="customAccessDeniedHandler"/>
+</security:http>
+
+<security:authentication-manager>
+	<!-- 사용자 인증을 처리할 UserDetailService -->
+	<security:authentication-provider user-service-ref="customUserDetailService">
+		
+	<!-- Password 암호화를위한 Encoder -->
+	<security:password-encoder ref="bcryptPasswordEncoder"/>
+
+	</security:authentication-provider>
+</security:authentication-manager>
+```
+
+### CustomUser
+```java
+public class CustomUser extends User {
+	
+	private static final long serialVersionUID = 1L;
+	
+	private UserVO member;
+	
+	public CustomUser(String username, String password, Collection<? extends GrantedAuthority> authorities) {
+		super(username, password, authorities);
+		// TODO Auto-generated constructor stub
+	}
+	
+	public CustomUser(UserVO vo) {
+		
+		// 로그인한 유저의 정보로 User를 생성한다.
+		super(vo.getUserid(), vo.getUserpw(), vo.getAuthList().stream().map(auth -> new SimpleGrantedAuthority(auth.getAuth())).collect(Collectors.toList()));
+		this.member = vo;
+		
+	}
+	
+}
+```
+
+### CustomUserDetailService
+```java
+public class CustomUserDetailService implements UserDetailsService {
+	
+	@Setter(onMethod_ = {@Autowired} )
+	UserMapper mapper;
+	
+	@Override
+	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+	
+		// 해당하는 이름의 유저 정보를 불러온다.
+		// 주의 Spring Security 에서 username은 일반적인 userid를 의미한다.
+		UserVO member = mapper.read(username);
+		
+		return member == null ? null : new CustomUser(member);
+	}	
+}
+```
+
+### mapper.read(String userid)
+사용자가 입력한 로그인 정보가 올바른 정보인지 확인하기 위해  
+매개변수로 전달된 userid에 해당하는 DataBase 에서 User정보를 가져오는 함수이다.  
+MyBatis를 사용한다.
+
+
+#### UserMapeer
+사용자의 정보와 관련된 Database 처를 하는 Mybatis 설정 파일이다.
+
+```xml
+
+<mapper namespace="com.board.mapper.UserMapper">
+	
+	//유저의 권한 정보를 Mapping 한다.
+	<resultMap type="com.board.domain.AuthVO" id="authMap">
+		<result property="userid" column="userid"/>
+		<result property="auth" column="auth"/>
+	</resultMap>
+	
+	//유저의 정보를 Mapping 한다.
+	<resultMap type="com.board.domain.MemberVO" id="memberMap">
+		<result property="userid" column="userid"/>
+		<result property="userpw" column="userpw"/>
+		<result property="username" column="username"/>
+		<result property="regDate" column="regdate"/>
+		<result property="updateDate" column="updatedate"/>
+		<collection property="authList" resultMap="authMap"/>
+	</resultMap>
+	
+	//유저의 정보와 권한을 조회하고 Mapping 한다.
+	<select id="read" resultMap="memberMap">
+		select use.userid, userpw, username, regdate, updatedate, auth
+		from userlist use left outer join user_auth auth on use.userid = auth.userid
+		where use.userid=#{userid} 
+	</select>	
+</mapper>
+```
+
+
+
+### Login Controller
+로그인과 관련된 요청을 처리하는 Controller.
+
+```java
+@Log4j
+@Controller
+@RequestMapping("/")
+public class LoginController {
+	
+	//로그인 성공했지만 권한이 불충분할 때 accessDenied.jsp 페이지를 보여준다.
+	@RequestMapping("accessDenied")
+	public void accessError(Authentication auth, Model model){
+		model.addAttribute("msg", "Access Denied");
+	}
+	
+	//로그인 페이지로 이동한다.
+	//로그아웃, 로그인실패 정보를 받을 수 있다.
+	@GetMapping("loginPage")
+	public void loginInfo(String error, String logout, Model model) {
+		if(error != null) {
+			model.addAttribute("error", "로그인 정보를 확인해주세요");
+		}
+		if(logout != null) {
+			model.addAttribute("logout", "로그아웃");
+		}
+	}
+}
+
+```
+
+
 ## 화면 구성
+
 ![dsadasdsad](https://user-images.githubusercontent.com/81062639/140887021-aead5489-c5c0-4a3e-9669-4871509d7ad3.PNG)
 
 
