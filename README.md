@@ -95,7 +95,7 @@ public class AuthVO {
 ```
 
 
-### AuthVO
+### UserVO
 사용자의 정보을 관리하는 Database의 userlist 테이블과 매핑되는 클래스이다.
 
 ```java
