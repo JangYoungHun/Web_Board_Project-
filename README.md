@@ -84,7 +84,7 @@ id와 password 를 이용하여 사용자를 인증하고 권한을 확인한다
 ![시큐리티 테이블](https://user-images.githubusercontent.com/81062639/141306513-9da913eb-9e21-42ef-85ff-3335ba59d7b9.png)
 
 ### AuthVO
-사용자의 권한을 관리하는 Database의 user_auth 테이블과 매핑되는 클래스이다.
+사용자의 권한을 관리하는 Database의 user_auth 테이블에 해당하는 클래스이다.
 
 ```java
 @Data
@@ -96,7 +96,7 @@ public class AuthVO {
 
 
 ### UserVO
-사용자의 정보을 관리하는 Database의 userlist 테이블과 매핑되는 클래스이다.
+사용자의 정보을 관리하는 Database의 userlist 테이블에 해당하는 클래스이다.
 
 ```java
 @Data
